@@ -10,12 +10,18 @@ import * as liveRegion from "@atlaskit/pragmatic-drag-and-drop-live-region";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { reorder } from "@atlaskit/pragmatic-drag-and-drop/reorder";
+import { createClient } from "@supabase/supabase-js";
 
 import { ColumnMap, ColumnType, getBasicData, Person } from "./data/people";
 import Board from "./pieces/board/board";
 import { BoardContext, BoardContextValue } from "./pieces/board/board-context";
 import { Column } from "./pieces/board/column";
 import { createRegistry } from "./pieces/board/registry";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_PROJECT_URL;
+const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+const client = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 type Outcome =
 	| {
@@ -160,6 +166,21 @@ export default function BoardExample() {
 
 	useEffect(() => {
 		return liveRegion.cleanup();
+	}, []);
+
+	useEffect(() => {
+		// Join a room/topic. Can be anything except for 'realtime'.
+		const channelA = client.channel("room1");
+		// Simple function to log any messages we receive
+		function messageReceived(payload) {
+			console.log("msg rcv = ", JSON.stringify(payload));
+		}
+
+		// Subscribe to the Channel
+		channelA
+			.on("broadcast", { event: "*" }, (payload) => messageReceived(payload))
+			.subscribe();
+		console.log("Inside effect");
 	}, []);
 
 	const getColumns = useCallback(() => {
@@ -312,6 +333,26 @@ export default function BoardExample() {
 		[]
 	);
 
+	const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+		// Send a message once the client is subscribed
+		const channelB = client.channel("room1");
+		channelB.subscribe((status) => {
+			// Wait for successful connection
+			if (status !== "SUBSCRIBED") {
+				return null;
+			}
+			channelB.send({
+				type: "broadcast",
+				event: "test",
+				payload: {
+					message: {
+						x: e.clientX,
+						y: e.clientY,
+					},
+				},
+			});
+		});
+	};
 	const [instanceId] = useState(() => Symbol("instance-id"));
 
 	useEffect(() => {
@@ -467,11 +508,13 @@ export default function BoardExample() {
 
 	return (
 		<BoardContext.Provider value={contextValue}>
-			<Board>
-				{data.orderedColumnIds.map((columnId) => {
-					return <Column column={data.columnMap[columnId]} key={columnId} />;
-				})}
-			</Board>
+			<div onMouseMove={handleMouseMove}>
+				<Board>
+					{data.orderedColumnIds.map((columnId) => {
+						return <Column column={data.columnMap[columnId]} key={columnId} />;
+					})}
+				</Board>
+			</div>
 		</BoardContext.Provider>
 	);
 }
