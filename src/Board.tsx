@@ -17,6 +17,7 @@ import Board from "./pieces/board/board";
 import { BoardContext, BoardContextValue } from "./pieces/board/board-context";
 import { Column } from "./pieces/board/column";
 import { createRegistry } from "./pieces/board/registry";
+import Cursor from "./components/Cursor";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_PROJECT_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -57,6 +58,8 @@ type BoardState = {
 };
 
 export default function BoardExample() {
+	const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
+
 	const [data, setData] = useState<BoardState>(() => {
 		const base = getBasicData();
 		return {
@@ -174,6 +177,7 @@ export default function BoardExample() {
 		// Simple function to log any messages we receive
 		function messageReceived(payload) {
 			console.log("msg rcv = ", JSON.stringify(payload));
+			setCursor(payload.payload.message);
 		}
 
 		// Subscribe to the Channel
@@ -507,14 +511,19 @@ export default function BoardExample() {
 	}, [getColumns, reorderColumn, reorderCard, registry, moveCard, instanceId]);
 
 	return (
-		<BoardContext.Provider value={contextValue}>
-			<div onMouseMove={handleMouseMove}>
-				<Board>
-					{data.orderedColumnIds.map((columnId) => {
-						return <Column column={data.columnMap[columnId]} key={columnId} />;
-					})}
-				</Board>
-			</div>
-		</BoardContext.Provider>
+		<>
+			<BoardContext.Provider value={contextValue}>
+				<div onMouseMove={handleMouseMove}>
+					<Board>
+						{data.orderedColumnIds.map((columnId) => {
+							return (
+								<Column column={data.columnMap[columnId]} key={columnId} />
+							);
+						})}
+					</Board>
+				</div>
+			</BoardContext.Provider>
+			{cursor && <Cursor x={cursor.x} y={cursor.y} />}
+		</>
 	);
 }
