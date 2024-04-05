@@ -10,7 +10,7 @@ import * as liveRegion from "@atlaskit/pragmatic-drag-and-drop-live-region";
 import { combine } from "@atlaskit/pragmatic-drag-and-drop/combine";
 import { monitorForElements } from "@atlaskit/pragmatic-drag-and-drop/element/adapter";
 import { reorder } from "@atlaskit/pragmatic-drag-and-drop/reorder";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, REALTIME_CHANNEL_STATES } from "@supabase/supabase-js";
 
 import { ColumnMap, ColumnType, getBasicData, Person } from "./data/people";
 import Board from "./pieces/board/board";
@@ -23,6 +23,13 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_PROJECT_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const client = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// Join a room/topic. Can be anything except for 'realtime'.
+// const channelA = client.channel("room1");
+
+// Send a message once the client is subscribed
+const channel = client.channel("room1");
+const MOUSE_EVENT = "cursor";
 
 type Outcome =
 	| {
@@ -58,6 +65,15 @@ type BoardState = {
 };
 
 export default function BoardExample() {
+	// const [channelA, setChannelA] = useState(() => {
+	// 	// Join a room/topic. Can be anything except for 'realtime'.
+	// 	return client.channel("room1");
+	// });
+	// const [channelB, setChannelB] = useState(() => {
+	// 	// Join a room/topic. Can be anything except for 'realtime'.
+	// 	return client.channel("room1");
+	// });
+
 	const [cursor, setCursor] = useState<{ x: number; y: number } | null>(null);
 
 	const [data, setData] = useState<BoardState>(() => {
@@ -171,19 +187,46 @@ export default function BoardExample() {
 		return liveRegion.cleanup();
 	}, []);
 
-	useEffect(() => {
-		// Join a room/topic. Can be anything except for 'realtime'.
-		const channelA = client.channel("room1");
-		// Simple function to log any messages we receive
-		function messageReceived(payload) {
-			console.log("msg rcv = ", JSON.stringify(payload));
-			setCursor(payload.payload.message);
-		}
+	const receivedCursorPosition = ({ event, payload }) => {
+		setCursor({
+			x: payload.x,
+			y: payload.y,
+		});
+		console.log(`
+			User: ${payload.userId}
+			x Position: ${payload.x}
+			y Position: ${payload.y}
+		`);
+	};
 
-		// Subscribe to the Channel
-		channelA
-			.on("broadcast", { event: "*" }, (payload) => messageReceived(payload))
-			.subscribe();
+	useEffect(() => {
+		// Simple function to log any messages we receive
+		// function messageReceived(payload, channelName: string) {
+		// 	console.log("msg rcv = ", channelName, JSON.stringify(payload));
+		// 	setCursor(payload.payload.message);
+		// }
+
+		// // Subscribe to the Channel
+		// channelA.on("broadcast", { event: "test" }, (payload) =>
+		// 	messageReceived(payload, "channelA")
+		// );
+
+		// channelB.on("broadcast", { event: "test" }, (payload) =>
+		// 	messageReceived(payload, "channelB")
+		// );
+		// // 	.subscribe();
+		const rtChannel = channel.on(
+			"broadcast",
+			{ event: MOUSE_EVENT },
+			(event) => {
+				console.log({ event });
+				receivedCursorPosition(event);
+			}
+		);
+		console.log({ status: rtChannel.state });
+		if (rtChannel.state === REALTIME_CHANNEL_STATES.closed) {
+			rtChannel.subscribe();
+		}
 		console.log("Inside effect");
 	}, []);
 
@@ -337,25 +380,48 @@ export default function BoardExample() {
 		[]
 	);
 
-	const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-		// Send a message once the client is subscribed
-		const channelB = client.channel("room1");
-		channelB.subscribe((status) => {
-			// Wait for successful connection
-			if (status !== "SUBSCRIBED") {
-				return null;
-			}
-			channelB.send({
-				type: "broadcast",
-				event: "test",
-				payload: {
-					message: {
-						x: e.clientX,
-						y: e.clientY,
-					},
-				},
-			});
+	const sendMousePosition = (channel, userId, x, y) => {
+		return channel.send({
+			type: "broadcast",
+			event: MOUSE_EVENT,
+			payload: { userId, x, y },
 		});
+	};
+
+	const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+		sendMousePosition(channel, 1, e.clientX, e.clientY);
+		// channelB.subscribe((status) => {
+		// 	// Wait for successful connection
+		// 	if (status !== "SUBSCRIBED") {
+		// 		return null;
+		// 	}
+		// 	channelB.send({
+		// 		type: "broadcast",
+		// 		event: "test",
+		// 		payload: {
+		// 			message: {
+		// 				x: e.clientX,
+		// 				y: e.clientY,
+		// 			},
+		// 		},
+		// 	});
+		// });
+		// channelA.subscribe((status) => {
+		// 	// Wait for successful connection
+		// 	if (status !== "SUBSCRIBED") {
+		// 		return null;
+		// 	}
+		// 	channelB.send({
+		// 		type: "broadcast",
+		// 		event: "test",
+		// 		payload: {
+		// 			message: {
+		// 				x: e.clientX,
+		// 				y: e.clientY,
+		// 			},
+		// 		},
+		// 	});
+		// });
 	};
 	const [instanceId] = useState(() => Symbol("instance-id"));
 
@@ -509,6 +575,8 @@ export default function BoardExample() {
 			instanceId,
 		};
 	}, [getColumns, reorderColumn, reorderCard, registry, moveCard, instanceId]);
+
+	console.log({ cursor });
 
 	return (
 		<>
