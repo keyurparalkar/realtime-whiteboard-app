@@ -4,7 +4,11 @@
   "main": "index.js",
   "license": "MIT",
   "type": "module",
+  "scripts": {
+    "devServer": "node index.js"
+  },
   "dependencies": {
-    "express": "4"
+    "express": "4",
+    "socket.io": "^4.7.5"
   }
 }
