@@ -5,7 +5,10 @@ import { io } from "socket.io-client";
 function App() {
 	useEffect(() => {
 		const socket = io("http://localhost:3000");
-		console.log({ socket });
+
+		socket.on("new-user", (id: string, count: number) => {
+			console.log({ id, count });
+		});
 	}, []);
 	return (
 		<>
