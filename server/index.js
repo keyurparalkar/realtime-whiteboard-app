@@ -18,9 +18,17 @@ const io = new Server(server, {
  *
  */
 io.on("connection", (socket) => {
-	console.log("A user connected with id - ", socket.id);
+	const clientCount = io.engine.clientsCount;
+	const clientIds = Array.from(io.sockets.sockets, (value) => value[0]);
+	console.log("A user connected with id - ", socket.id, clientIds);
 
-	io.emit("new-user", socket.id, io.engine.clientsCount);
+	io.emit("new-user", socket.id, clientCount, clientIds);
+
+	socket.on("init", (toId, msg) => {
+		console.log({ toId, socketId: socket.id, msg: Object.keys(msg) });
+		socket.broadcast.emit("init", toId, msg);
+		// io.to(toId).emit("init", socket.id, msg);
+	});
 });
 
 server.listen(3000, () => {
