@@ -43,7 +43,19 @@ function App() {
 					const socket = io("http://localhost:3000");
 
 					socket.on("init", async (fromId, msg) => {
-						console.log("Init handler = ", { fromId, socketId: socket.id });
+						// console.log("Init handler = ", {
+						// 	// fromId,
+						// 	// socketId: socket.id,
+						// 	// msg,
+						// 	connections: connections.current,
+						// });
+
+						if (socket.id && msg.ansSdp) {
+							console.log("Inside AnsSDP");
+							await connections.current[socket.id].setRemoteDescription(
+								msg.ansSdp
+							);
+						}
 
 						if (fromId !== socket.id) {
 							if (msg.sdp) {
@@ -51,8 +63,11 @@ function App() {
 
 								const answer = await connections.current[fromId].createAnswer();
 								await connections.current[fromId].setLocalDescription(answer);
-								socket.emit("init", fromId, {
-									sdp: connections.current[fromId].localDescription,
+								console.log(
+									`created answer for fromId: ${fromId} with current Socket.id: ${socket.id}`
+								);
+								socket.emit("init", socket.id, {
+									ansSdp: connections.current[fromId].localDescription,
 								});
 							}
 
@@ -62,17 +77,20 @@ function App() {
 								connections.current[fromId].addIceCandidate(candidate);
 							}
 						}
-						console.log({ connections });
 					});
 
 					socket.on(
 						"new-user",
 						async (fromId: string, count: number, allClientIds: string[]) => {
 							console.log("new-user = ", { fromId, count, allClientIds });
+							console.log(
+								"connections in new-user event = ",
+								connections.current
+							);
 
 							if (connections.current && allClientIds) {
 								allClientIds.forEach((clientId) => {
-									if (!(clientId in connections)) {
+									if (!(clientId in connections.current)) {
 										connections.current[clientId] = new RTCPeerConnection(
 											peerConnectionConfig
 										);
@@ -89,6 +107,7 @@ function App() {
 											e: RTCTrackEvent
 										) => {
 											const newVideo = document.createElement("video");
+											newVideo.setAttribute("data-socketid", clientId);
 											newVideo.width = 400;
 											newVideo.height = 300;
 											newVideo.autoplay = true;
