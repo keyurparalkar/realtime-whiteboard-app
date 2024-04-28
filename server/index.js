@@ -42,6 +42,14 @@ io.on("connection", (socket) => {
 
 	socket.on("client-offers", (offers) => {
 		console.log(`Offers from ${socket.id} ${JSON.stringify(offers)}`);
+
+		//send offers recieved from the client to external sockets.
+		const externalSockets = Object.keys(offers);
+		for (const socketId of externalSockets) {
+			console.log("external socket id: ", socketId);
+
+			io.to(socket.id).emit("external-offer", socketId, offers[socketId]);
+		}
 	});
 });
 

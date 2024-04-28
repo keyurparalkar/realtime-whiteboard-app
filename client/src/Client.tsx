@@ -21,7 +21,7 @@ const Client = () => {
 
 				socket.on("new-user", async (socketIds: string[]) => {
 					const externalSocketsIds = socketIds.filter((id) => id !== socket.id);
-					console.log({ externalSocketsIds });
+					// console.log({ externalSocketsIds });
 
 					// create offer and set the SDP to signalling server
 					for (const socketId of externalSocketsIds) {
@@ -36,8 +36,16 @@ const Client = () => {
 							connections.current[socketId].localDescription;
 					}
 
-					console.log(`Created offer = `, offers.current);
+					// console.log(`Created offer = `, offers.current);
 					socket.emit("client-offers", offers.current);
+				});
+
+				socket.on("external-offer", (socketId, offer) => {
+					console.log(
+						`Recieved offer ${JSON.stringify(
+							offer
+						)} for ${socketId} current SocketId = ${socket.id}`
+					);
 				});
 			}
 		})();
