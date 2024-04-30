@@ -30,6 +30,7 @@
     "@emotion/react": "11.7.1",
     "@supabase/supabase-js": "^2.42.0",
     "lodash": "^4.17.21",
+    "nanoid": "^5.0.7",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "styled-components": "3.2.6",
