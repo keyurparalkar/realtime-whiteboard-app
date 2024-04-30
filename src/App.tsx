@@ -1,7 +1,10 @@
 import "./App.css";
 import { createClient } from "@supabase/supabase-js";
 
-const throttle = <ArgType,>(instance, func: (args: ArgType) => unknown) => {
+const throttle = <ArgType,>(
+	instance: unknown,
+	func: (args: ArgType) => unknown
+) => {
 	let flag: NodeJS.Timeout | null = null;
 	const _this = instance;
 
