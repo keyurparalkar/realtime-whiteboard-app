@@ -91,10 +91,9 @@ function App() {
 		<div id="container" onMouseMove={handleClick}>
 			<h1>Live Cursor Example</h1>
 			<span>{JSON.stringify(newClients, null, 2)}</span>
-			{Object.keys(newClients).map((clientId) => {
-				const { x, y } = newClients[clientId];
-				return <Cursor x={x} y={y} />;
-			})}
+			{Object.keys(newClients).map((clientId) => (
+				<Cursor key={clientId} {...newClients[clientId]} />
+			))}
 		</div>
 	);
 }
