@@ -70,6 +70,7 @@ function App() {
 
 	useEffect(() => {
 		if (isFirstRender.current) {
+			// subscribing to broadcast events
 			channel
 				.on(
 					"broadcast",
@@ -77,11 +78,21 @@ function App() {
 					(log: { type: "broadcast"; event: string; payload: Payload }) =>
 						logger(log.payload)
 				)
-				.subscribe((status) => {
-					if (status !== "SUBSCRIBED") {
-						return null;
-					}
-				});
+
+				// subscribing to presence events. This will help us to know which user joined and left.
+				// We can also share a state between all the connected clients.
+
+				.on("presence", { event: "sync" }, () => {
+					const newState = channel.presenceState();
+					console.log("sync = ", newState);
+				})
+				.on("presence", { event: "join" }, (data) => {
+					console.log("join = ", data);
+				})
+				.on("presence", { event: "leave" }, ({ key, leftPresences }) => {
+					console.log("leave = ", key, leftPresences);
+				})
+				.subscribe();
 
 			isFirstRender.current = false;
 		}
