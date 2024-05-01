@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { nanoid } from "nanoid";
 import "./App.css";
 import { useEffect, useRef, useState } from "react";
+import Cursor from "./components/Cursor";
 
 type Payload = {
 	clientId: string;
@@ -90,6 +91,10 @@ function App() {
 		<div id="container" onMouseMove={handleClick}>
 			<h1>Live Cursor Example</h1>
 			<span>{JSON.stringify(newClients, null, 2)}</span>
+			{Object.keys(newClients).map((clientId) => {
+				const { x, y } = newClients[clientId];
+				return <Cursor x={x} y={y} />;
+			})}
 		</div>
 	);
 }
