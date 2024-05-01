@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { nanoid } from "nanoid";
 import "./App.css";
-import { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import Cursor from "./components/Cursor";
 
 type Payload = {
@@ -9,6 +9,8 @@ type Payload = {
 	x: number;
 	y: number;
 };
+
+type Clients = Record<string, Omit<Payload, "clientId">>;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_PROJECT_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -39,12 +41,10 @@ const throttle = <ArgType,>(
 const func = throttle(channel, channel.send);
 
 function App() {
-	const [newClients, setNewClients] = useState<
-		Record<string, { x: number; y: number }>
-	>({});
+	const [newClients, setNewClients] = useState<Clients>({});
 	const isFirstRender = useRef(true);
 
-	const logger = (payload: Payload) => {
+	const sendBroadcast = (payload: Payload) => {
 		const { clientId, x, y } = payload;
 
 		setNewClients((preVal) => ({
@@ -56,7 +56,18 @@ function App() {
 		}));
 	};
 
-	const handleClick = (event: React.MouseEvent<HTMLDivElement>) => {
+	const removeClient = useCallback(
+		(clientId: string) => {
+			console.log({ newClients });
+			const clients = { ...newClients };
+			delete clients[clientId];
+
+			setNewClients(clients);
+		},
+		[newClients]
+	);
+
+	const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
 		func({
 			type: "broadcast",
 			event: "test",
@@ -69,37 +80,48 @@ function App() {
 	};
 
 	useEffect(() => {
+		channel
+			.on("presence", { event: "sync" }, () => {
+				const newState = channel.presenceState();
+				console.log("sync = ", newState);
+			})
+			.on(
+				"broadcast",
+				{ event: "test" },
+				(log: { type: "broadcast"; event: string; payload: Payload }) =>
+					sendBroadcast(log.payload)
+			);
+	}, []);
+
+	useEffect(() => {
+		channel.on<{ clientId: string }>(
+			"presence",
+			{ event: "leave" },
+			({ key, leftPresences }) => {
+				console.log("leave", key, leftPresences);
+
+				const { clientId } = leftPresences[0];
+				console.log("newClients in effect = ", newClients);
+				removeClient(clientId);
+			}
+		);
+	}, [newClients, removeClient]);
+
+	useEffect(() => {
 		if (isFirstRender.current) {
-			// subscribing to broadcast events
-			channel
-				.on(
-					"broadcast",
-					{ event: "test" },
-					(log: { type: "broadcast"; event: string; payload: Payload }) =>
-						logger(log.payload)
-				)
+			channel.subscribe(async (status) => {
+				if (status !== "SUBSCRIBED") return;
 
-				// subscribing to presence events. This will help us to know which user joined and left.
-				// We can also share a state between all the connected clients.
-
-				.on("presence", { event: "sync" }, () => {
-					const newState = channel.presenceState();
-					console.log("sync = ", newState);
-				})
-				.on("presence", { event: "join" }, (data) => {
-					console.log("join = ", data);
-				})
-				.on("presence", { event: "leave" }, ({ key, leftPresences }) => {
-					console.log("leave = ", key, leftPresences);
-				})
-				.subscribe();
-
+				await channel.track({
+					clientId: CURRENT_CLIENT_ID,
+				});
+			});
 			isFirstRender.current = false;
 		}
 	}, []);
 
 	return (
-		<div id="container" onMouseMove={handleClick}>
+		<div id="container" onMouseMove={handleMouseMove}>
 			<h1>Live Cursor Example</h1>
 			<span>{JSON.stringify(newClients, null, 2)}</span>
 			{Object.keys(newClients).map((clientId) => (
