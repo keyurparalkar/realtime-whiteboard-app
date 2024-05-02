@@ -38,33 +38,12 @@ const throttle = <ArgType,>(
 	};
 };
 
-const func = throttle(channel, channel.send);
+const func = throttle(channel, channel.track);
 
 function App() {
 	const [newClients, setNewClients] = useState<Clients>({});
 	const subsChannel = useRef<RealtimeChannel | null>(null);
 	const isFirstRender = useRef(true);
-
-	const sendBroadcast = (payload: Payload) => {
-		const { clientId, x, y } = payload;
-
-		setNewClients((preVal) => ({
-			...preVal,
-			[clientId]: {
-				x,
-				y,
-			},
-		}));
-
-		if (subsChannel.current) {
-			subsChannel.current.track({
-				[clientId]: {
-					x,
-					y,
-				},
-			});
-		}
-	};
 
 	const removeClient = useCallback(
 		(clientId: string) => {
@@ -78,10 +57,7 @@ function App() {
 
 	const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
 		func({
-			type: "broadcast",
-			event: "test",
-			payload: {
-				clientId: CURRENT_CLIENT_ID,
+			[CURRENT_CLIENT_ID]: {
 				x: event.clientX,
 				y: event.clientY,
 			},
@@ -89,48 +65,35 @@ function App() {
 	};
 
 	useEffect(() => {
-		channel
-			.on("presence", { event: "sync" }, () => {
-				const newState = channel.presenceState<Clients>();
-				console.log("sync = ", newState);
+		channel.on("presence", { event: "sync" }, () => {
+			const newState = channel.presenceState<Clients>();
 
-				const updatedClients: Clients = {};
+			const updatedClients: Clients = {};
 
-				Object.keys(newState).forEach((stateId) => {
-					const presenceValue = newState[stateId][0];
-					const clientId = Object.keys(presenceValue)[0];
+			Object.keys(newState).forEach((stateId) => {
+				const presenceValue = newState[stateId][0];
+				const clientId = Object.keys(presenceValue)[0];
+
+				// Prevent adding current client into updatedClients:
+				if (clientId !== CURRENT_CLIENT_ID)
 					updatedClients[clientId] = presenceValue[clientId];
-				});
+			});
 
-				setNewClients(updatedClients);
-			})
-			.on(
-				"broadcast",
-				{ event: "test" },
-				(log: { type: "broadcast"; event: string; payload: Payload }) =>
-					sendBroadcast(log.payload)
-			);
+			setNewClients(updatedClients);
+		});
 	}, []);
 
 	useEffect(() => {
-		channel
-			.on<{ clientId: string }>(
-				"presence",
-				{ event: "leave" },
-				({ key, leftPresences }) => {
-					console.log("leave", key, leftPresences);
+		channel.on<{ clientId: string }>(
+			"presence",
+			{ event: "leave" },
+			({ key, leftPresences }) => {
+				console.log("leave", key, leftPresences);
 
-					const { clientId } = leftPresences[0];
-					removeClient(clientId);
-				}
-			)
-			.on<{ clientId: string }>(
-				"presence",
-				{ event: "join" },
-				({ key, currentPresences, event }) => {
-					console.log("join = ", key, currentPresences, event);
-				}
-			);
+				const { clientId } = leftPresences[0];
+				removeClient(clientId);
+			}
+		);
 	}, [newClients, removeClient]);
 
 	useEffect(() => {
