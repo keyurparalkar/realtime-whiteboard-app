@@ -3,19 +3,32 @@ import { nanoid } from "nanoid";
 import "./App.css";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import Cursor from "./components/Cursor";
+import StickyNote from "./components/StickyNote";
 
-type Payload = {
-	clientId: string;
+type Note = {
 	x: number;
 	y: number;
+	content: string;
 };
 
-type Clients = Record<string, Omit<Payload, "clientId">>;
+type Payload = {
+	x: number;
+	y: number;
+	notes: Array<Note>;
+};
+
+type Clients = Record<string, Payload>;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_PROJECT_URL;
 const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 const CURRENT_CLIENT_ID = nanoid();
+
+const DEFAULT_NOTE = {
+	x: 10,
+	y: 10,
+	content: "Default Note",
+};
 
 const clientA = createClient(SUPABASE_URL, SUPABASE_KEY);
 const channel = clientA.channel("room-1");
@@ -58,8 +71,18 @@ function App() {
 	const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
 		func({
 			[CURRENT_CLIENT_ID]: {
+				...newClients[CURRENT_CLIENT_ID],
 				x: event.clientX,
 				y: event.clientY,
+			},
+		});
+	};
+
+	const handleNoteAddition = () => {
+		subsChannel.current?.track?.({
+			[CURRENT_CLIENT_ID]: {
+				...newClients[CURRENT_CLIENT_ID],
+				notes: [DEFAULT_NOTE],
 			},
 		});
 	};
@@ -87,14 +110,12 @@ function App() {
 		channel.on<{ clientId: string }>(
 			"presence",
 			{ event: "leave" },
-			({ key, leftPresences }) => {
-				console.log("leave", key, leftPresences);
-
+			({ leftPresences }) => {
 				const { clientId } = leftPresences[0];
 				removeClient(clientId);
 			}
 		);
-	}, [newClients, removeClient]);
+	}, [removeClient]);
 
 	useEffect(() => {
 		if (isFirstRender.current) {
@@ -107,11 +128,26 @@ function App() {
 
 	return (
 		<div id="container" onMouseMove={handleMouseMove}>
+			<button onClick={handleNoteAddition}>Add Note</button>
 			<h1>Live Cursor Example</h1>
 			<span>{JSON.stringify(newClients, null, 2)}</span>
-			{Object.keys(newClients).map((clientId) => (
-				<Cursor key={clientId} {...newClients[clientId]} />
-			))}
+			{Object.keys(newClients).map((clientId) => {
+				const clientNotes = newClients[clientId].notes;
+
+				return (
+					<>
+						<Cursor key={clientId} {...newClients[clientId]} />
+						{clientNotes?.map((note, index) => (
+							<StickyNote
+								key={`note-${clientId}-${index}`}
+								$x={note.x}
+								$y={note.y}
+								$noteText={note.content}
+							/>
+						))}
+					</>
+				);
+			})}
 		</div>
 	);
 }
