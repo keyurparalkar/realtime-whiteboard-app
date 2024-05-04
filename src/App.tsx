@@ -71,7 +71,7 @@ function App() {
 	const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
 		func({
 			[CURRENT_CLIENT_ID]: {
-				...newClients[CURRENT_CLIENT_ID],
+				eventType: "move-mouse",
 				x: event.clientX,
 				y: event.clientY,
 			},
@@ -81,7 +81,7 @@ function App() {
 	const handleNoteAddition = () => {
 		subsChannel.current?.track?.({
 			[CURRENT_CLIENT_ID]: {
-				...newClients[CURRENT_CLIENT_ID],
+				eventType: "add-note",
 				notes: [DEFAULT_NOTE],
 			},
 		});
@@ -91,19 +91,41 @@ function App() {
 		channel.on("presence", { event: "sync" }, () => {
 			const newState = channel.presenceState<Clients>();
 
-			const updatedClients: Clients = {};
+			const presenceValues: Clients = {};
 
 			Object.keys(newState).forEach((stateId) => {
 				const presenceValue = newState[stateId][0];
 				const clientId = Object.keys(presenceValue)[0];
 
-				// Prevent adding current client into updatedClients:
+				// Prevent adding current client into presenceValues:
 				if (clientId !== CURRENT_CLIENT_ID)
-					updatedClients[clientId] = presenceValue[clientId];
+					presenceValues[clientId] = presenceValue[clientId];
 			});
 
-			setNewClients(updatedClients);
+			setNewClients((preValue) => {
+				const updatedClients = Object.keys(presenceValues).reduce<Clients>(
+					(acc, curr) => {
+						acc[curr] = {
+							...preValue[curr],
+							...presenceValues[curr],
+						};
+						return acc;
+					},
+					{}
+				);
+
+				return updatedClients;
+			});
 		});
+	}, []);
+
+	useEffect(() => {
+		if (isFirstRender.current) {
+			subsChannel.current = channel.subscribe(async (status) => {
+				if (status !== "SUBSCRIBED") return;
+			});
+			isFirstRender.current = false;
+		}
 	}, []);
 
 	useEffect(() => {
@@ -116,15 +138,6 @@ function App() {
 			}
 		);
 	}, [removeClient]);
-
-	useEffect(() => {
-		if (isFirstRender.current) {
-			subsChannel.current = channel.subscribe(async (status) => {
-				if (status !== "SUBSCRIBED") return;
-			});
-			isFirstRender.current = false;
-		}
-	}, []);
 
 	return (
 		<div id="container" onMouseMove={handleMouseMove}>
