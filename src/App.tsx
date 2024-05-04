@@ -1,58 +1,20 @@
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { RealtimeChannel, createClient } from "@supabase/supabase-js";
 import { nanoid } from "nanoid";
+
 import "./App.css";
-import React, { useCallback, useEffect, useRef, useState } from "react";
 import Cursor from "./components/Cursor";
 import StickyNote from "./components/StickyNote";
-
-type Note = {
-	x: number;
-	y: number;
-	content: string;
-};
-
-type Payload = {
-	eventType: "move-mouse" | "move-note" | "add-note";
-	x: number;
-	y: number;
-	notes: Array<Note>;
-};
-
-type Clients = Record<string, Payload>;
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_PROJECT_URL;
-const SUPABASE_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+import { Clients, EventTypes } from "./types";
+import { DEFAULT_NOTE, SUPABASE_KEY, SUPABASE_URL } from "./constants";
+import { throttle } from "./utils";
 
 const CURRENT_CLIENT_ID = nanoid();
-
-const DEFAULT_NOTE = {
-	x: 10,
-	y: 10,
-	content: "Default Note",
-};
 
 const clientA = createClient(SUPABASE_URL, SUPABASE_KEY);
 const channel = clientA.channel("room-1");
 
-const throttle = <ArgType,>(
-	instance: unknown,
-	func: (args: ArgType) => unknown,
-	delay: number = 2000
-) => {
-	let flag: NodeJS.Timeout | null = null;
-	const _this = instance;
-
-	return (args: ArgType) => {
-		if (flag === null) {
-			func.call(_this, args);
-			flag = setTimeout(() => {
-				flag = null;
-			}, delay);
-		}
-	};
-};
-
-const func = throttle(channel, channel.track);
+const throttledChannelTrack = throttle(channel, channel.track);
 
 function App() {
 	const [newClients, setNewClients] = useState<Clients>({});
@@ -70,10 +32,10 @@ function App() {
 	);
 
 	const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-		func({
+		throttledChannelTrack({
 			[CURRENT_CLIENT_ID]: {
 				...newClients[CURRENT_CLIENT_ID],
-				eventType: "move-mouse",
+				eventType: EventTypes.MOVE_MOUSE,
 				x: event.clientX,
 				y: event.clientY,
 			},
@@ -81,10 +43,11 @@ function App() {
 	};
 
 	const handleNoteAddition = () => {
+		// We want to add notes immediately, hence not using throttled version of track():
 		subsChannel.current?.track?.({
 			[CURRENT_CLIENT_ID]: {
 				...newClients[CURRENT_CLIENT_ID],
-				eventType: "add-note",
+				eventType: EventTypes.ADD_NOTE,
 				notes: [DEFAULT_NOTE],
 			},
 		});
