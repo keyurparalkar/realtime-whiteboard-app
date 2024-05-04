@@ -12,6 +12,7 @@ type Note = {
 };
 
 type Payload = {
+	eventType: "move-mouse" | "move-note" | "add-note";
 	x: number;
 	y: number;
 	notes: Array<Note>;
@@ -71,6 +72,7 @@ function App() {
 	const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
 		func({
 			[CURRENT_CLIENT_ID]: {
+				...newClients[CURRENT_CLIENT_ID],
 				eventType: "move-mouse",
 				x: event.clientX,
 				y: event.clientY,
@@ -81,6 +83,7 @@ function App() {
 	const handleNoteAddition = () => {
 		subsChannel.current?.track?.({
 			[CURRENT_CLIENT_ID]: {
+				...newClients[CURRENT_CLIENT_ID],
 				eventType: "add-note",
 				notes: [DEFAULT_NOTE],
 			},
@@ -97,9 +100,7 @@ function App() {
 				const presenceValue = newState[stateId][0];
 				const clientId = Object.keys(presenceValue)[0];
 
-				// Prevent adding current client into presenceValues:
-				if (clientId !== CURRENT_CLIENT_ID)
-					presenceValues[clientId] = presenceValue[clientId];
+				presenceValues[clientId] = presenceValue[clientId];
 			});
 
 			setNewClients((preValue) => {
