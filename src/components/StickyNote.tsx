@@ -94,7 +94,8 @@ const StickyNote = (props: StickyNoteProps) => {
 	};
 
 	const handleMouseMove = (event: React.MouseEvent<HTMLDivElement>) => {
-		if (isMouseDown.current) {
+		// prevent other clients to move the note of the current client
+		if (isMouseDown.current && allowUserUpdates) {
 			setX(event.clientX);
 			setY(event.clientY);
 			const currentNote: Note = {
