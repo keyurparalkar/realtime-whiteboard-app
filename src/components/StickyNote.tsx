@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { Note } from "../types";
 
 /**
@@ -17,10 +17,13 @@ type StickyNoteProps = {
 	noteIndex: number;
 	handleNoteMouseMove: (currentNote: Note, noteIndex: number) => void;
 	allowUserUpdates: boolean;
+	color: string;
+	clientName: string;
 };
 
 type StyledNoteProps = {
 	$allowTransition: boolean;
+	$borderColor: string;
 };
 
 /**
@@ -29,7 +32,17 @@ type StyledNoteProps = {
  * For this to work, we enable transition property of all the clients except for the current client which is dragging the note.
  */
 const StyledNote = styled.div<StyledNoteProps>`
-	${(props) => !props.$allowTransition && `transition: all 1s ease-in-out;`}
+	${(props) =>
+		!props.$allowTransition &&
+		css`
+			transition: all 1s ease-in-out;
+			outline: 5px solid ${props.$borderColor || "pink"};
+			&:hover {
+				& #user-tag {
+					visibility: visible;
+				}
+			}
+		`}
 	position: absolute;
 	width: 300px;
 	height: 200px;
@@ -40,9 +53,32 @@ const StyledNote = styled.div<StyledNoteProps>`
 	transform: translate(-150px, -100px);
 `;
 
+const StyledUserTag = styled.div<{ $bgColor: string }>`
+	visibility: hidden;
+
+	position: absolute;
+	left: 68%;
+	top: -19%;
+	width: 100px;
+	height: 30px;
+	background-color: ${(props) => props.$bgColor || "pink"};
+
+	color: white;
+	font-weight: 800;
+	font-size: 1rem;
+`;
+
 const StickyNote = (props: StickyNoteProps) => {
-	const { noteText, $x, $y, handleNoteMouseMove, noteIndex, allowUserUpdates } =
-		props;
+	const {
+		noteText,
+		$x,
+		$y,
+		handleNoteMouseMove,
+		noteIndex,
+		allowUserUpdates,
+		color,
+		clientName,
+	} = props;
 
 	const [text, setText] = useState(noteText || "");
 	const [x, setX] = useState(0);
@@ -83,12 +119,16 @@ const StickyNote = (props: StickyNoteProps) => {
 		<StyledNote
 			id="sticky-note"
 			$allowTransition={allowUserUpdates}
+			$borderColor={color}
 			onInput={handleInput}
 			onMouseDown={handleMouseDown}
 			onMouseMove={handleMouseMove}
 			onMouseUp={handleMouseUp}
 			style={{ top: y, left: x }}
 		>
+			<StyledUserTag id="user-tag" $bgColor={color}>
+				user-{clientName}
+			</StyledUserTag>
 			{text}
 		</StyledNote>
 	);

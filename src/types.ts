@@ -14,6 +14,7 @@ type Payload = {
 	eventType: EventTypes;
 	x: number;
 	y: number;
+	color: string;
 	notes: Array<Note>;
 };
 

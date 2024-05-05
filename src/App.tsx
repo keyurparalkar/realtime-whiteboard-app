@@ -2,12 +2,15 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { RealtimeChannel, createClient } from "@supabase/supabase-js";
 import { nanoid } from "nanoid";
 
-import "./App.css";
 import Cursor from "./components/Cursor";
 import StickyNote from "./components/StickyNote";
 import { Clients, EventTypes, Note } from "./types";
 import { DEFAULT_NOTE, SUPABASE_KEY, SUPABASE_URL } from "./constants";
 import { throttle } from "./utils";
+import "./App.css";
+
+const randomNumber = Math.trunc(Math.random() * 100);
+const randomColor = `rgb(${randomNumber}%, 30%, 40%)`;
 
 const CURRENT_CLIENT_ID = nanoid();
 
@@ -36,6 +39,7 @@ function App() {
 			[CURRENT_CLIENT_ID]: {
 				...newClients[CURRENT_CLIENT_ID],
 				eventType: EventTypes.MOVE_MOUSE,
+				color: randomColor,
 				x: event.clientX,
 				y: event.clientY,
 			},
@@ -124,19 +128,30 @@ function App() {
 			<h1>Live Cursor Example</h1>
 			<span>{JSON.stringify(newClients, null, 2)}</span>
 			{Object.keys(newClients).map((clientId) => {
-				const clientNotes = newClients[clientId].notes;
+				const currentClientName = clientId.substring(0, 4);
+
+				const currentClient = newClients[clientId];
+				const clientNotes = currentClient.notes;
 
 				// Only the current client can make updates to the note.
 				const allowUserUpdates = clientId === CURRENT_CLIENT_ID;
 
 				return (
 					<div key={`container-${clientId}`}>
-						<Cursor key={clientId} {...newClients[clientId]} />
+						<Cursor
+							key={clientId}
+							x={currentClient.x}
+							y={currentClient.y}
+							color={currentClient.color}
+							clientName={currentClientName}
+						/>
 						{clientNotes?.map((note, index) => (
 							<StickyNote
 								key={`note-${clientId}-${index}`}
 								$x={note.x}
 								$y={note.y}
+								color={currentClient.color}
+								clientName={currentClientName}
 								noteText={note.content}
 								noteIndex={index}
 								allowUserUpdates={allowUserUpdates}
