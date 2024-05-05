@@ -77,6 +77,10 @@ const StyledTextArea = styled.textarea`
 
 	font-size: 1rem;
 	font-weight: 600;
+
+	&:focus-visible {
+		outline: none;
+	}
 `;
 
 const StickyNote = (props: StickyNoteProps) => {
@@ -106,7 +110,11 @@ const StickyNote = (props: StickyNoteProps) => {
 
 	const handleDoubleClick = () => {
 		if (textAreaRef.current) {
-			textAreaRef.current.focus();
+			if (allowUserUpdates) {
+				textAreaRef.current.focus();
+			} else {
+				textAreaRef.current.blur();
+			}
 		}
 	};
 
