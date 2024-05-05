@@ -47,12 +47,16 @@ function App() {
 	};
 
 	const handleNoteAddition = () => {
+		const currentClient = newClients[CURRENT_CLIENT_ID];
+
 		// We want to add notes immediately, hence not using throttled version of track():
 		subsChannel.current?.track?.({
 			[CURRENT_CLIENT_ID]: {
-				...newClients[CURRENT_CLIENT_ID],
+				...currentClient,
 				eventType: EventTypes.ADD_NOTE,
-				notes: [DEFAULT_NOTE],
+				notes: currentClient.notes
+					? [...currentClient.notes, DEFAULT_NOTE]
+					: [DEFAULT_NOTE],
 			},
 		});
 	};
