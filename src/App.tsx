@@ -138,13 +138,15 @@ function App() {
 
 				return (
 					<div key={`container-${clientId}`}>
-						<Cursor
-							key={clientId}
-							x={currentClient.x}
-							y={currentClient.y}
-							color={currentClient.color}
-							clientName={currentClientName}
-						/>
+						{clientId !== CURRENT_CLIENT_ID && (
+							<Cursor
+								key={clientId}
+								x={currentClient.x}
+								y={currentClient.y}
+								color={currentClient.color}
+								clientName={currentClientName}
+							/>
+						)}
 						{clientNotes?.map((note, index) => (
 							<StickyNote
 								key={`note-${clientId}-${index}`}
