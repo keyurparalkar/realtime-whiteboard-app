@@ -5,7 +5,7 @@ import { nanoid } from "nanoid";
 import "./App.css";
 import Cursor from "./components/Cursor";
 import StickyNote from "./components/StickyNote";
-import { Clients, EventTypes } from "./types";
+import { Clients, EventTypes, Note } from "./types";
 import { DEFAULT_NOTE, SUPABASE_KEY, SUPABASE_URL } from "./constants";
 import { throttle } from "./utils";
 
@@ -49,6 +49,21 @@ function App() {
 				...newClients[CURRENT_CLIENT_ID],
 				eventType: EventTypes.ADD_NOTE,
 				notes: [DEFAULT_NOTE],
+			},
+		});
+	};
+
+	const handleNoteMouseMove = (currentNote: Note, noteIndex: number) => {
+		const currentClient = newClients[CURRENT_CLIENT_ID];
+
+		const notes = currentClient.notes;
+		notes[noteIndex] = currentNote;
+
+		throttledChannelTrack({
+			[CURRENT_CLIENT_ID]: {
+				...currentClient,
+				eventType: EventTypes.MOVE_NOTE,
+				notes,
 			},
 		});
 	};
@@ -111,18 +126,24 @@ function App() {
 			{Object.keys(newClients).map((clientId) => {
 				const clientNotes = newClients[clientId].notes;
 
+				// Only the current client can make updates to the note.
+				const allowUserUpdates = clientId === CURRENT_CLIENT_ID;
+
 				return (
-					<>
+					<div key={`container-${clientId}`}>
 						<Cursor key={clientId} {...newClients[clientId]} />
 						{clientNotes?.map((note, index) => (
 							<StickyNote
 								key={`note-${clientId}-${index}`}
 								$x={note.x}
 								$y={note.y}
-								$noteText={note.content}
+								noteText={note.content}
+								noteIndex={index}
+								allowUserUpdates={allowUserUpdates}
+								handleNoteMouseMove={handleNoteMouseMove}
 							/>
 						))}
-					</>
+					</div>
 				);
 			})}
 		</div>

@@ -4,7 +4,7 @@ export enum EventTypes {
 	ADD_NOTE = "add-note",
 }
 
-type Note = {
+export type Note = {
 	x: number;
 	y: number;
 	content: string;
