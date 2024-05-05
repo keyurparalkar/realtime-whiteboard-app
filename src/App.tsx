@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import { RealtimeChannel, createClient } from "@supabase/supabase-js";
 import { nanoid } from "nanoid";
+import styled from "styled-components";
 
 import Cursor from "./components/Cursor";
 import StickyNote from "./components/StickyNote";
@@ -18,6 +19,19 @@ const clientA = createClient(SUPABASE_URL, SUPABASE_KEY);
 const channel = clientA.channel("room-1");
 
 const throttledChannelTrack = throttle(channel, channel.track);
+
+const StyledContainer = styled.div`
+	& #navbar {
+		display: grid;
+		grid-template-rows: 1fr;
+		grid-template-columns: 0.05fr 0.05fr 1fr 0.1fr;
+	}
+
+	& button {
+		height: 30px;
+		margin-top: 1rem;
+	}
+`;
 
 function App() {
 	const [newClients, setNewClients] = useState<Clients>({});
@@ -142,10 +156,16 @@ function App() {
 	}, [removeClient]);
 
 	return (
-		<div id="container" onMouseMove={handleMouseMove}>
-			<button onClick={handleNoteAddition}>Add Note</button>
-			<h1>Live Cursor Example</h1>
-			<span>{JSON.stringify(newClients, null, 2)}</span>
+		<StyledContainer id="container" onMouseMove={handleMouseMove}>
+			<div id="info-container">
+				<div id="navbar">
+					<button onClick={handleNoteAddition}>Add Note</button>
+					<button>Enable Logs</button>
+					<h1>Live Cursor Example</h1>
+				</div>
+				<h2>Client: {CURRENT_CLIENT_ID.substring(0, 4)}</h2>
+				<span>{JSON.stringify(newClients, null, 2)}</span>
+			</div>
 			{Object.keys(newClients).map((clientId) => {
 				const currentClientName = clientId.substring(0, 4);
 
@@ -183,7 +203,7 @@ function App() {
 					</div>
 				);
 			})}
-		</div>
+		</StyledContainer>
 	);
 }
 
