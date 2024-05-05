@@ -52,6 +52,7 @@ const StyledNote = styled.div<StyledNoteProps>`
 	font-weight: 500;
 	font-size: 2rem;
 	transform: translate(-150px, -100px);
+	cursor: move;
 `;
 
 const StyledUserTag = styled.div<{ $bgColor: string }>`
@@ -70,6 +71,7 @@ const StyledUserTag = styled.div<{ $bgColor: string }>`
 `;
 
 const StyledTextArea = styled.textarea`
+	cursor: move;
 	width: 85%;
 	margin: 1rem;
 	border: none;
@@ -80,6 +82,7 @@ const StyledTextArea = styled.textarea`
 
 	&:focus-visible {
 		outline: none;
+		cursor: text;
 	}
 `;
 
