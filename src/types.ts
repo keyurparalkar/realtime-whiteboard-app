@@ -2,6 +2,7 @@ export enum EventTypes {
 	MOVE_MOUSE = "move-mouse",
 	MOVE_NOTE = "move-note",
 	ADD_NOTE = "add-note",
+	ADD_NOTE_TEXT = "add-note-text",
 }
 
 export type Note = {

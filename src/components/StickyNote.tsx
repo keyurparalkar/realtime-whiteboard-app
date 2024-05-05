@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { ElementRef, useEffect, useRef, useState } from "react";
 import styled, { css } from "styled-components";
 import { Note } from "../types";
 
@@ -15,10 +15,11 @@ type StickyNoteProps = {
 	$x: number;
 	$y: number;
 	noteIndex: number;
-	handleNoteMouseMove: (currentNote: Note, noteIndex: number) => void;
 	allowUserUpdates: boolean;
 	color: string;
 	clientName: string;
+	handleNoteMouseMove: (currentNote: Note, noteIndex: number) => void;
+	handleNoteTextChange: (text: string, noteIndex: number) => void;
 };
 
 type StyledNoteProps = {
@@ -68,25 +69,50 @@ const StyledUserTag = styled.div<{ $bgColor: string }>`
 	font-size: 1rem;
 `;
 
+const StyledTextArea = styled.textarea`
+	width: 85%;
+	margin: 1rem;
+	border: none;
+	background: transparent;
+
+	font-size: 1rem;
+	font-weight: 600;
+`;
+
 const StickyNote = (props: StickyNoteProps) => {
 	const {
 		noteText,
 		$x,
 		$y,
-		handleNoteMouseMove,
 		noteIndex,
 		allowUserUpdates,
 		color,
 		clientName,
+		handleNoteMouseMove,
+		handleNoteTextChange,
 	} = props;
 
-	const [text, setText] = useState(noteText || "");
+	const [text, setText] = useState("");
 	const [x, setX] = useState(0);
 	const [y, setY] = useState(0);
 	const isMouseDown = useRef(false);
+	const textAreaRef = useRef<ElementRef<"textarea">>(null);
 
-	const handleInput = (event: React.FormEvent<HTMLDivElement>) => {
-		setText(event.currentTarget.textContent || "");
+	const handleClick = () => {
+		if (textAreaRef.current) {
+			textAreaRef.current.blur();
+		}
+	};
+
+	const handleDoubleClick = () => {
+		if (textAreaRef.current) {
+			textAreaRef.current.focus();
+		}
+	};
+
+	const handleOnChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+		setText(event.currentTarget.value || "");
+		handleNoteTextChange(event.currentTarget.value || "", noteIndex);
 	};
 
 	const handleMouseDown = () => {
@@ -116,12 +142,15 @@ const StickyNote = (props: StickyNoteProps) => {
 		setY($y);
 	}, [$x, $y]);
 
+	useEffect(() => {
+		setText(noteText);
+	}, [noteText]);
+
 	return (
 		<StyledNote
 			id="sticky-note"
 			$allowTransition={allowUserUpdates}
 			$borderColor={color}
-			onInput={handleInput}
 			onMouseDown={handleMouseDown}
 			onMouseMove={handleMouseMove}
 			onMouseUp={handleMouseUp}
@@ -130,7 +159,15 @@ const StickyNote = (props: StickyNoteProps) => {
 			<StyledUserTag id="user-tag" $bgColor={color}>
 				user-{clientName}
 			</StyledUserTag>
-			{text}
+			<StyledTextArea
+				id="editable-text-area"
+				rows={8}
+				onChange={handleOnChange}
+				onClick={handleClick}
+				onDoubleClick={handleDoubleClick}
+				ref={textAreaRef}
+				value={text}
+			></StyledTextArea>
 		</StyledNote>
 	);
 };

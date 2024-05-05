@@ -76,6 +76,21 @@ function App() {
 		});
 	};
 
+	const handleNoteTextChange = (text: string, noteIndex: number) => {
+		const currentClient = newClients[CURRENT_CLIENT_ID];
+
+		const notes = currentClient.notes;
+		notes[noteIndex].content = text;
+
+		throttledChannelTrack({
+			[CURRENT_CLIENT_ID]: {
+				...currentClient,
+				eventType: EventTypes.ADD_NOTE_TEXT,
+				notes,
+			},
+		});
+	};
+
 	useEffect(() => {
 		channel.on("presence", { event: "sync" }, () => {
 			const newState = channel.presenceState<Clients>();
@@ -162,6 +177,7 @@ function App() {
 								noteIndex={index}
 								allowUserUpdates={allowUserUpdates}
 								handleNoteMouseMove={handleNoteMouseMove}
+								handleNoteTextChange={handleNoteTextChange}
 							/>
 						))}
 					</div>
