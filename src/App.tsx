@@ -35,8 +35,13 @@ const StyledContainer = styled.div`
 
 function App() {
 	const [newClients, setNewClients] = useState<Clients>({});
+	const [enableLogs, setEnableLogs] = useState(false);
 	const subsChannel = useRef<RealtimeChannel | null>(null);
 	const isFirstRender = useRef(true);
+
+	const toggleLogs = () => {
+		setEnableLogs(!enableLogs);
+	};
 
 	const removeClient = useCallback(
 		(clientId: string) => {
@@ -160,11 +165,11 @@ function App() {
 			<div id="info-container">
 				<div id="navbar">
 					<button onClick={handleNoteAddition}>Add Note</button>
-					<button>Enable Logs</button>
+					<button onClick={toggleLogs}>Enable Logs</button>
 					<h1>Live Cursor Example</h1>
 				</div>
 				<h2>Client: {CURRENT_CLIENT_ID.substring(0, 4)}</h2>
-				<span>{JSON.stringify(newClients, null, 2)}</span>
+				{enableLogs && <span>{JSON.stringify(newClients, null, 2)}</span>}
 			</div>
 			{Object.keys(newClients).map((clientId) => {
 				const currentClientName = clientId.substring(0, 4);
