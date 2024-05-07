@@ -8,6 +8,7 @@ type CursorProps = {
 };
 
 const StyledCursor = styled.div<Omit<CursorProps, "clientName">>`
+	z-index: 10;
 	transition: all 0.5s ease-in-out;
 
 	display: inline-block;
