@@ -19,13 +19,13 @@ This project was inspired from Figma real time editing and miro's white board fu
 
 - FrontEnd
 
-  - React.js
-  - Supabasejs
-  - styled-components
-  - nanoid
+  - [React.js](https://react.dev/)
+  - [Supabasejs](https://supabase.com/docs/reference/javascript/introduction)
+  - [styled-components](https://styled-components.com/docs/basics)
+  - [nanoid](https://github.com/ai/nanoid)
 
 - Backend
-  - Supabase(docker setup)
+  - [Supabase CLI](https://supabase.com/docs/guides/cli/getting-started)
 
 ## Approach
 
